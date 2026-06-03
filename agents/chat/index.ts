@@ -34,8 +34,14 @@ const SYSTEM_PROMPT = [
   '- browser: interact with web pages — fetch, screenshot, click, type, evaluate.',
   '  Parameters: op (required), url (for fetch), selector, text, script.',
   '',
-  "Use tools whenever they help answer the user's question concretely.",
-  'Call tools ONE AT A TIME. Do NOT simulate or fake tool outputs — actually call the tool.',
+  'Tool-use rules:',
+  '1. Use a tool only when it is necessary to answer the user concretely.',
+  '2. Call tools one at a time and wait for each result before deciding the next step.',
+  '3. Never invent, simulate, or paraphrase tool results. If a tool result is unavailable, say so.',
+  '4. If a tool call fails, do not repeat it blindly and do not switch to unrelated operations.',
+  '   Briefly explain the failure, adjust the parameters only if the fix is clear, otherwise ask the user for guidance.',
+  '5. Do not perform destructive file or shell operations unless the user explicitly asks for them.',
+  '6. If the task can be answered without tools, answer directly and keep the response concise.',
   'Do NOT use any tools other than those listed above.',
 ].join('\n');
 
@@ -273,7 +279,23 @@ async function streamModelRound(params: {
       const errorBody = await response.text().catch(() => '');
       logger.error(`[handler] LLM API error: ${response.status} ${errorBody}`);
       span?.setAttributes?.({ 'http.status_code': response.status, 'llm.error': true });
-      sendEvent(controller, 'error', { message: `LLM API error: ${response.status}` });
+
+      // Try to parse upstream body as JSON so TracePanel can render it structured
+      let detail: unknown = errorBody;
+      try {
+        detail = errorBody ? JSON.parse(errorBody) : '';
+      } catch {
+        // keep raw string
+      }
+
+      sendEvent(controller, 'error', {
+        message: `LLM API error: ${response.status}`,
+        status: response.status,
+        statusText: response.statusText,
+        round,
+        model,
+        detail,
+      });
       return { content, toolCalls, stopped, failed: true };
     }
 
@@ -472,7 +494,12 @@ export async function onRequest(context: any) {
             'error.type': error.name || 'Error',
             'error.message': error.message || String(e),
           });
-          sendEvent(controller, 'error', { message: String(error.message ?? e) });
+          sendEvent(controller, 'error', {
+            message: String(error.message ?? e),
+            name: error.name || 'Error',
+            stack: error.stack,
+            cause: (error as { cause?: unknown }).cause,
+          });
         }
       } finally {
         if (assistantContent) {
