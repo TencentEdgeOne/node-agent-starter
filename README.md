@@ -2,6 +2,10 @@
 
 A minimal Node.js/TypeScript LLM Agent template on EdgeOne Makers. Demonstrates how to build a streaming chat Agent with raw `fetch` calls, EdgeOne sandbox tool calling, and session memory via `context.store`.
 
+## Deploy
+
+[![Deploy with EdgeOne Pages](https://cdnstatic.tencentcs.com/edgeone/pages/deploy.svg)](https://edgeone.ai/makers/new?template=node-starter-agent&from=within&fromAgent=1&agentLang=typescript)
+
 ## Features
 
 - **Streaming Chat** — SSE (Server-Sent Events) token-by-token response push
