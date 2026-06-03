@@ -91,15 +91,31 @@ export function buildTools(context: any, logger?: any): ToolRegistry {
       continue;
     }
 
-    registry.register(name, {
-      ...item,
-      type: 'function',
-      function: item?.function ?? {
-        name,
-        description: item?.description ?? '',
-        parameters: item?.parameters ?? item?.inputSchema ?? item?.input_schema ?? { type: 'object', properties: {} },
+    // Build a clean OpenAI function-tool schema. Do NOT spread the raw item —
+    // EdgeOne tool items carry extra fields (execute, inputSchema, type='tool', etc.)
+    // that strict upstream gateways may reject, causing the whole `tools` array to be
+    // silently ignored and the model to answer without ever calling a tool.
+    const description: string =
+      item?.function?.description ?? item?.description ?? '';
+    const parameters: Record<string, unknown> =
+      item?.function?.parameters ??
+      item?.parameters ??
+      item?.inputSchema ??
+      item?.input_schema ??
+      { type: 'object', properties: {} };
+
+    registry.register(
+      name,
+      {
+        type: 'function',
+        function: {
+          name,
+          description,
+          parameters,
+        },
       },
-    }, handler);
+      handler,
+    );
     if (logger) {
       logger.log(`[tools] registered: ${name}`);
     }

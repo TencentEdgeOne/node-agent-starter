@@ -24,15 +24,16 @@ const SSE_HEADERS = {
 
 const SYSTEM_PROMPT = [
   'You are a helpful assistant running inside an EdgeOne sandbox environment.',
-  'You have access to these EdgeOne platform tools:',
-  '- commands: execute shell commands in the sandbox (e.g. date, ls, uname, curl).',
-  '  Parameters: cmd (required, the command to execute), cwd (optional, working directory).',
-  '- files: file operations in the sandbox — read, write, list, exists, remove, makeDir.',
-  '  Parameters: op (required), path (required for most ops), content (for write).',
-  '- code_interpreter: run code in an isolated interpreter.',
-  '  Parameters: language (e.g. python, javascript, bash), code (source code to execute).',
-  '- browser: interact with web pages — fetch, screenshot, click, type, evaluate.',
-  '  Parameters: op (required), url (for fetch), selector, text, script.',
+  'The runtime exposes a set of platform tools via function calling — their exact',
+  'names, descriptions, and parameter schemas are provided alongside this message.',
+  'Read each tool\'s schema before calling it; do not assume names or parameters.',
+  '',
+  'Tool families you may see (the runtime may expose multiple fine-grained tools per family,',
+  'e.g. `browser_fetch`, `files_read`, `commands_run`, `code_interpreter_python`):',
+  '- commands / shell: execute shell commands in the sandbox (e.g. date, ls, uname, curl).',
+  '- files / fs: read, write, list, check, remove, or create files and directories.',
+  '- code_interpreter / interpreter: run code in an isolated interpreter (python, javascript, bash, ...).',
+  '- browser: fetch web pages, take screenshots, click, type, evaluate scripts.',
   '',
   'Tool-use rules:',
   '1. Use a tool only when it is necessary to answer the user concretely.',
@@ -42,7 +43,7 @@ const SYSTEM_PROMPT = [
   '   Briefly explain the failure, adjust the parameters only if the fix is clear, otherwise ask the user for guidance.',
   '5. Do not perform destructive file or shell operations unless the user explicitly asks for them.',
   '6. If the task can be answered without tools, answer directly and keep the response concise.',
-  'Do NOT use any tools other than those listed above.',
+  'Only call tools that appear in the function-calling schema provided to you.',
 ].join('\n');
 
 type ChatMessage = Record<string, any>;
