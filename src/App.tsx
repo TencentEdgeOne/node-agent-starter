@@ -11,8 +11,28 @@ import TracePanel from './components/TracePanel';
 import styles from './App.module.css';
 
 const LAMP_IDS = ['commands', 'files', 'code_interpreter', 'browser'] as const;
+type LampId = typeof LAMP_IDS[number];
 const LAMP_ICONS: Record<string, string> = { commands: '💻', files: '📁', code_interpreter: '⚡', browser: '🌐' };
 const LAMP_I18N_KEYS: Record<string, MessageKeys> = { commands: 'tool.commands', files: 'tool.files', code_interpreter: 'tool.codeRunner', browser: 'tool.browser' };
+
+/**
+ * Map an EdgeOne platform tool name to a lamp group.
+ *
+ * The runtime exposes fine-grained tools (e.g. `browser_fetch`,
+ * `browser_screenshot`, `files_read`, `commands_run`,
+ * `code_interpreter_python`). The header only has 4 lamps, so we collapse
+ * each family by prefix / keyword. Returns null for tools that don't belong
+ * to any lamp group (e.g. `web_search`).
+ */
+function toolToLampId(toolName: string): LampId | null {
+  const name = toolName.toLowerCase();
+  if (name.startsWith('browser') || name.includes('browse')) return 'browser';
+  if (name.startsWith('code_interpreter') || name.startsWith('code-interpreter') || name.startsWith('interpreter')) return 'code_interpreter';
+  if (name.startsWith('files') || name.startsWith('file_') || name.startsWith('fs_')) return 'files';
+  if (name.startsWith('commands') || name.startsWith('command_') || name.startsWith('cmd_') || name.startsWith('shell') || name === 'exec') return 'commands';
+  if ((LAMP_IDS as readonly string[]).includes(name)) return name as LampId;
+  return null;
+}
 
 const CONVERSATION_ID_STORAGE_KEY = 'eo_conversation_id';
 
@@ -165,21 +185,45 @@ function AppInner() {
           setBotActivity({ type: 'web_search', label: 'Web searching...', status: 'active' });
         }
 
-        const existing = lampTimers.current.get(toolName);
+        const lampId = toolToLampId(toolName);
+        if (!lampId) return;
+
+        const existing = lampTimers.current.get(lampId);
         if (existing) clearTimeout(existing);
-        setLamps(prev => prev.map(l => l.id === toolName ? { ...l, active: true, animKey: l.animKey + 1 } : l));
+        setLamps(prev => prev.map(l => l.id === lampId ? { ...l, active: true, animKey: l.animKey + 1 } : l));
         const tid = window.setTimeout(() => {
-          setLamps(prev => prev.map(l => (l.id === toolName ? { ...l, active: false } : l)));
-          lampTimers.current.delete(toolName);
+          setLamps(prev => prev.map(l => (l.id === lampId ? { ...l, active: false } : l)));
+          lampTimers.current.delete(lampId);
         }, 1000);
-        lampTimers.current.set(toolName, tid);
+        lampTimers.current.set(lampId, tid);
       },
 
       onRawEvent(event) {
         if (!isWebSearchToolEvent(event)) {
           finishBotActivity();
         }
-        if (event.eventType === 'text_delta') return;
+        // Coalesce consecutive text_delta events into a single growing entry,
+        // so a multi-paragraph response doesn't flood the trace panel with
+        // hundreds of one-token rows.
+        if (event.eventType === 'text_delta') {
+          const delta = (event.data as { delta?: string } | null)?.delta ?? '';
+          setRightPanelMode('trace');
+          setTraceEvents(prev => {
+            const last = prev[prev.length - 1];
+            if (last && last.eventType === 'text_delta') {
+              const prevDelta = (last.data as { delta?: string } | null)?.delta ?? '';
+              const merged: RawSseEvent = {
+                ...last,
+                data: { delta: prevDelta + delta },
+                raw: last.raw + delta,
+                timestamp: event.timestamp,
+              };
+              return [...prev.slice(0, -1), merged];
+            }
+            return [...prev, event];
+          });
+          return;
+        }
         setRightPanelMode('trace');
         setTraceEvents(prev => [...prev, event]);
       },
