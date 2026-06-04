@@ -37,7 +37,7 @@ export default memo(function ChatBubble({ message }: Props) {
           message.content
         ) : (
           message.content && (
-            <div className={styles.markdown}>
+            <div className={`${styles.markdown} ${message.streaming ? styles.markdownStreaming : ''}`}>
               <Markdown remarkPlugins={[remarkGfm]}>{message.content}</Markdown>
             </div>
           )
