@@ -145,6 +145,22 @@ function AppInner() {
     });
   }, []);
 
+  /** Clear the assistant message's `streaming` flag (hides the blinking caret). */
+  const clearBotStreaming = useCallback(() => {
+    setMessages(prev => {
+      let changed = false;
+      const next = prev.map(m => {
+        if (m.id === botMsgIdRef.current && m.streaming) {
+          changed = true;
+          const { streaming, ...rest } = m;
+          return rest;
+        }
+        return m;
+      });
+      return changed ? next : prev;
+    });
+  }, []);
+
   const finishStream = useCallback(() => {
     setLoading(false);
     abortCtrlRef.current = null;
@@ -169,6 +185,7 @@ function AppInner() {
       role: 'assistant',
       content: '',
       timestamp: Date.now(),
+      streaming: true,
     };
 
     setMessages(prev => [...prev, userMsg, botMsg]);
@@ -230,18 +247,20 @@ function AppInner() {
 
       onDone() {
         finishBotActivity();
+        clearBotStreaming();
         finishStream();
       },
 
       onError() {
         finishBotActivity();
+        clearBotStreaming();
         updateBotMessage(content => content || t('status.error'));
         finishStream();
       },
     }, conversationIdRef.current);
 
     abortCtrlRef.current = ctrl;
-  }, [loading, updateBotMessage, setBotActivity, finishBotActivity, finishStream, t]);
+  }, [loading, updateBotMessage, setBotActivity, finishBotActivity, clearBotStreaming, finishStream, t]);
 
   const handleClearHistory = useCallback(() => {
     if (abortCtrlRef.current) {
