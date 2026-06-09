@@ -2,9 +2,9 @@
  * Backend API (EdgeOne Makers)
  *
  * Route mapping (file → route):
- *   agents/chat/index.ts    → POST /chat          Main chat endpoint (SSE streaming)
- *   agents/chat/stop.ts     → POST /chat/stop     Abort the active agent run
- *   agents/history/index.ts → POST /history       Get conversation history
+ *   agents/chat/index.ts             → POST /chat          Main chat endpoint (SSE streaming)
+ *   agents/chat/stop.ts              → POST /chat/stop     Abort the active agent run
+ *   cloud-functions/history/index.ts → POST /history       Get conversation history (stateless cloud function)
  *
  * This file defines all API paths and request wrappers.
  */
