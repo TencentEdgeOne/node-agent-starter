@@ -55,14 +55,16 @@ edgeone makers dev
 
 ```text
 node-starter/
-├── agents/                          # Node/TS 后端（EdgeOne Makers Agent Functions）
+├── agents/                          # Node/TS 后端（EdgeOne Makers Agent Functions，有状态）
 │   ├── chat/index.ts               # POST /chat —— SSE 流式聊天 + 工具循环
 │   ├── chat/stop.ts                # POST /chat/stop —— 中断当前 agent
-│   ├── history/index.ts            # POST /history —— 对话历史
 │   ├── _model.ts                   # LLM 模型配置（私有）
 │   ├── _logger.ts                  # 日志工具（私有）
 │   ├── _session.ts                 # 基于 context.store 的会话适配（私有）
 │   └── _tools.ts                   # EdgeOne 工具注册表（私有）
+├── cloud-functions/                 # Node/TS 后端（EdgeOne Pages Node Functions，无状态）
+│   ├── history/index.ts            # POST /history —— 对话历史
+│   └── _logger.ts                  # 日志工具（私有）
 ├── src/                             # React + Vite + TypeScript 前端
 │   ├── App.tsx                     # 主应用 + SSE 流生命周期管理
 │   ├── api.ts                      # /chat、/chat/stop、/history 接口封装

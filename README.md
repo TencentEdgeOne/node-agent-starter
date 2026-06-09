@@ -55,14 +55,16 @@ Local agent metrics & traces are exposed at `http://localhost:8080/agent-metrics
 
 ```text
 node-starter/
-├── agents/                          # Node/TS backend (EdgeOne Makers Agent Functions)
+├── agents/                          # Node/TS backend (EdgeOne Makers Agent Functions, stateful)
 │   ├── chat/index.ts               # POST /chat — SSE streaming chat with tool loop
 │   ├── chat/stop.ts                # POST /chat/stop — abort active agent run
-│   ├── history/index.ts            # POST /history — conversation history
 │   ├── _model.ts                   # LLM model config (private)
 │   ├── _logger.ts                  # Logger utility (private)
 │   ├── _session.ts                 # Session adapter over context.store (private)
 │   └── _tools.ts                   # EdgeOne tool registry (private)
+├── cloud-functions/                 # Node/TS backend (EdgeOne Pages Node Functions, stateless)
+│   ├── history/index.ts            # POST /history — conversation history
+│   └── _logger.ts                  # Logger utility (private)
 ├── src/                             # React + Vite + TypeScript frontend
 │   ├── App.tsx                     # Main app + SSE stream lifecycle
 │   ├── api.ts                      # /chat, /chat/stop, /history wrappers
