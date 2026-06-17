@@ -14,7 +14,7 @@ import { extractImagesFromToolResult } from './_images';
 
 const logger = createLogger('chat');
 const encoder = new TextEncoder();
-const MAX_TOOL_ROUNDS = 10;
+const MAX_TOOL_ROUNDS = 3;
 
 const SSE_HEADERS = {
   'Content-Type': 'text/event-stream; charset=utf-8',
